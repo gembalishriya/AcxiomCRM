@@ -33,7 +33,11 @@ export const customerApi = {
 
 export const leadApi = {
   list: (params) => api.get('/leads', { params }),
-  get: (id) => api.get(`/leads/${id}`)
+  get: (id) => api.get(`/leads/${id}`),
+  create: (payload) => api.post('/leads', payload),
+  update: (id, payload) => api.put(`/leads/${id}`, payload),
+  remove: (id) => api.delete(`/leads/${id}`),
+  convert: (id) => api.post(`/leads/${id}/convert`)
 };
 
 export const opportunityApi = {
