@@ -35,19 +35,38 @@ const opportunityReport = asyncHandler(async (req, res) => {
 });
 
 const pipelineReport = asyncHandler(async (req, res) => {
-  const rows = await FollowUp.find({}, 'followUpDate status followUpType assignedTo customerId leadId remarks createdAt')
-    .populate('assignedTo', 'firstName lastName email role')
-    .lean();
+  const [stageWise, ownerWise] = await Promise.all([
+    Opportunity.aggregate([
+      { $match: { isActive: true } },
+      {
+        $group: {
+          _id: '$stage',
+          amount: { $sum: '$amount' },
+          deals: { $sum: 1 }
+        }
+      },
+      { $sort: { amount: -1, _id: 1 } }
+    ]),
+    Opportunity.aggregate([
+      { $match: { isActive: true, assignedTo: { $ne: null } } },
+      {
+        $group: {
+          _id: '$assignedTo',
+          amount: { $sum: '$amount' },
+          deals: { $sum: 1 }
+        }
+      },
+      { $sort: { amount: -1, _id: 1 } }
+    ])
+  ]);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const data = rows.map((row) => ({
-    ...row,
-    overdue: row.status === 'Planned' && new Date(row.followUpDate) < today
-  }));
-
-  return res.json({ success: true, data });
+  return res.json({
+    success: true,
+    data: {
+      stageWise,
+      ownerWise
+    }
+  });
 });
 
 const conversionReport = asyncHandler(async (req, res) => {
